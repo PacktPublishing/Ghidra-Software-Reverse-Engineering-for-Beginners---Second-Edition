@@ -7,21 +7,21 @@ from docking.options import OptionsService
 # From https://github.com/0xAlexei/INFILTRATE2019/blob/master/PCodeMallocDemo/MallocTrace.java#L724
 def get_decompiler(state, program):
     tool = state.getTool()
-    options = DecompileOptions()
-    decomp = DecompInterface()
+    decompiler_options = DecompileOptions()
+    decompiler = DecompInterface()
     if tool is not None:
         service = tool.getService(OptionsService)
         if service is not None:
             opt = service.getOptions("Decompiler")
-            options.grabFromToolAndProgram(None, opt, program)
+            decompiler_options.grabFromToolAndProgram(None, opt, program)
 
-    decomp.setOptions(options)
+    decompiler.setOptions(decompiler_options)
 
-    decomp.toggleCCode(True)
-    decomp.toggleSyntaxTree(True)
-    decomp.setSimplificationStyle("decompile")
+    decompiler.toggleCCode(True)
+    decompiler.toggleSyntaxTree(True)
+    decompiler.setSimplificationStyle("decompile")
 
-    return decomp
+    return decompiler
 
 def process_sscanf_caller(hcaller, sscanf):
     for op in hcaller.pcodeOps:
@@ -55,19 +55,19 @@ def find_sscanf_vulns():
     # currentProgram and state are globals that are provided for us
     program = currentProgram
     symbolTable = program.getSymbolTable()
-    sscanfs = list(symbolTable.getSymbols('_sscanf'))
-    sscanfs.append(symbolTable.getSymbols('sscanf').next())
-    if len(sscanfs) == 0:
+    list_of_sscanfs = list(symbolTable.getSymbols('_sscanf'))
+    list_of_sscanfs.append(symbolTable.getSymbols('sscanf').next())
+    if len(list_of_sscanfs) == 0:
         print("sscanf not found")
         return
 
-    decomp = get_decompiler(state, program)
-    if not decomp.openProgram(program):
+    decompiler = get_decompiler(state, program)
+    if not decompiler.openProgram(program):
         print("Decompiler error")
         return
 
     functionManager = program.getFunctionManager()
-    for sscanf in sscanfs:
+    for sscanf in list_of_sscanfs:
         if isinstance(sscanf, FunctionSymbol):
             seen_functions = set()
             for ref in sscanf.references:
@@ -80,7 +80,7 @@ def find_sscanf_vulns():
 
                 seen_functions.add(ref.fromAddress)
 
-                result = decomp.decompileFunction(caller, decomp.options.defaultTimeout, None)
+                result = decompiler.decompileFunction(caller, decompiler.options.defaultTimeout, None)
                 if result is None or result.highFunction is None:
                     print('Unable to decompile function at %s' % caller.entryPoint)
                     continue
